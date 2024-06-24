@@ -11,8 +11,13 @@ export let ExactMatchOfNRule = class {
 
   match(param, colmap, target, ruleoption) {
     let query = undefined
-    if (target.type == 'simple') {
+    switch (target.type){
+    case 'simple':
       query = this.createSimpleQuery(param, colmap, ruleoption)
+    case 'sql':
+      query = this.createSQLQuery(param, colmap, ruleoption)
+    default :
+      throw new Error('type ' + target.type + ' is not supported.')
     }
     let match = target.query(query)
     return match
@@ -32,5 +37,10 @@ export let ExactMatchOfNRule = class {
     }
 
     return q
+  }
+
+  createSQLQuery(param, colmap, ruleoption){
+    let sql
+
   }
 }

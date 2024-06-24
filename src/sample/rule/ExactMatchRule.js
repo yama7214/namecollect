@@ -1,3 +1,5 @@
+import { SQLBuilder } from '../util/SQLBuilder.js'
+
 export let ExactMatchRule = class {
   static instance
 
@@ -9,11 +11,18 @@ export let ExactMatchRule = class {
 
   constructor() {}
 
-  match(param, colmap, target) {
+  match(param, colmap, target, ruleoption) {
     let query = undefined
-    if (target.type == 'simple') {
-      query = this.createSimpleQuery(param, colmap)
-    }
+    switch (target.type){
+      case 'simple':
+        query = this.createSimpleQuery(param, colmap, ruleoption)
+        break
+      case 'sql':
+        query = this.createSQLQuery(param, colmap, ruleoption)
+        break
+      default :
+        throw new Error('type ' + target.type + ' is not supported.')
+      }
     let match = target.query(query)
     return match
   }
@@ -32,5 +41,11 @@ export let ExactMatchRule = class {
     }
 
     return q
+  }
+
+  createSQLQuery(param, colmap){
+    let sql = new SQLBuilder()
+    sql.from = '${table}'
+    colmap.
   }
 }

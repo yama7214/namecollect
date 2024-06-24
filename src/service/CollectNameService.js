@@ -14,10 +14,11 @@ export let CollectNameService = class {
 
   collect(req) {
     let result = []
+    // TODO:loop query
     let r = req.query[0]
     let param = r.param
-    for (let t in r.target) {
-      let e = r.target[t]
+    for (let t in req.target) {
+      let e = req.target[t]
       let rule = CollectRuleRepository.getRule(e.rule)
       let target = CollectTargetRepository.getaTarget(t)
       let colmap = e.map

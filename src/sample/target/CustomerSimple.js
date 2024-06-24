@@ -6,6 +6,7 @@ export let CustomerSimple = class {
       ? CustomerSimple.instance
       : (CustomerSimple.instance = new CustomerSimple())
   }
+  
   constructor() {
     this.type = 'simple'
     this.data = [
