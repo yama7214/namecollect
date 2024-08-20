@@ -14,8 +14,10 @@ export let ExactMatchOfNRule = class {
     switch (target.type){
     case 'simple':
       query = this.createSimpleQuery(param, colmap, ruleoption)
+      break
     case 'sql':
       query = this.createSQLQuery(param, colmap, ruleoption)
+      break
     default :
       throw new Error('type ' + target.type + ' is not supported.')
     }

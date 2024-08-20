@@ -1,0 +1,33 @@
+{
+  "query": [
+    {
+      "provider": "SATORI",
+      
+      "id": "SATORI-001",
+
+      "param": {
+        "name_pre": "株式会社",
+        "name_post": "エ-エスピ―",
+        "+name": "name_pre+name_post",
+        "address": "〒103-0013　東京都中央区日本橋人形町3丁目3-13　オーキッドプレイス人形町ウエスト4F",
+        "tel": "00-0000-0000"
+      },
+    }
+  ],
+
+  "target": {
+    "CustomerMS20":{
+      "map": {
+        "name": ["name", "name_other"],
+        "address": "address",
+        "tel": "tel_no"
+      },
+      "rules":[{
+        "rule": "ExactMatchRule",
+        "ruleOption":{
+          "use":["name", "address"]
+        }
+      }]
+    }
+  }
+}

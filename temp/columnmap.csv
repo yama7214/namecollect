@@ -1,0 +1,4 @@
+21,SATORI,CustomerMS20,name,name,"{'"index'": [4, 6], '"concat'": ['"name_pre'", '"name_post'"]}",t,
+22,SATORI,CustomerMS20,name,name_other,"{'"index'": [4, 6], '"concat'": ['"name_pre'", '"name_post'"]}",f,
+23,SATORI,CustomerMS20,address,address,{},t,
+24,SATORI,CustomerMS20,tel,tel_no,{},t,

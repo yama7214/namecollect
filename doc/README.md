@@ -70,6 +70,8 @@ class TargetSource{
 
 class ColumnMap{}
 
+class IdMap{}
+
 class CollectRule{
   match(param, columnMap, target, ruleOption)
 }
@@ -100,6 +102,7 @@ QuerySourceRepository "1" o-- "*" QuerySource
 
 QuerySource "*" -  "*" TargetSource
 (QuerySource, TargetSource) .. ColumnMap
+(QuerySource, TargetSource) .. IdMap
 
 ```
 

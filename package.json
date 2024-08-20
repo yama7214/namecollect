@@ -1,7 +1,11 @@
 {
+    "main": "app.js",
     "type": "module",
     "dependencies": {
+        "express": "^4.19.2",
         "json5": "^2.2.3",
+        "log4js": "^6.9.1",
+        "node-fetch": "^3.3.2",
         "pg": "^8.12.0"
     }
 }

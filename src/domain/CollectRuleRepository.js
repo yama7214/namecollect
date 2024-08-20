@@ -1,6 +1,6 @@
 export let CollectRuleRepository = class {
   static ruleMap = {}
-  static getRule(ruleName) {
+  static getInstance(ruleName) {
     return CollectRuleRepository.ruleMap[ruleName]
   }
   static registerRule(ruleName, rule) {
