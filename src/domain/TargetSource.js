@@ -50,7 +50,7 @@ WHERE
             if ( target.alias2DB[r.tname] == undefined) continue
             let p ={}
             p.alias = r.tname
-            p.db =  target.alias2DB[r.tname].default.replace(/(.*)::.*/, '$1')
+            p.db =  target.alias2DB[r.tname].default.replaceAll(/::text/g, '')
             retval.param.push(p)
         }
         return retval
