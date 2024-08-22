@@ -246,23 +246,27 @@ export let BusinessPersonRemix = class {
 
 select 
  col_name as ext_colname,
-case
- when ex_type = 0 then 'text'
- when ex_type = 1 then 'select'
- when ex_type = 2 then 'date'
- when ex_type = 3 then 'num'
- when ex_type = 4 then 'text'
- when ex_type = 5 then 'decimal'
- when ex_type = 6 then 'checkbox'
- when ex_type = 7 then 'text'
- when ex_type = 8 then 'text'
- when ex_type = 9 then 'text'
- when ex_type = 11 then 'date'
- else 'err'
-end ext_type
+    case
+    when ex_belong = 3 then 'customer'
+    when ex_belong = 9 then 'business_person'
+    end ext_belong,
+    case
+    when ex_type = 0 then 'text'
+    when ex_type = 1 then 'select'
+    when ex_type = 2 then 'date'
+    when ex_type = 3 then 'num'
+    when ex_type = 4 then 'text'
+    when ex_type = 5 then 'decimal'
+    when ex_type = 6 then 'checkbox'
+    when ex_type = 7 then 'text'
+    when ex_type = 8 then 'text'
+    when ex_type = 9 then 'text'
+    when ex_type = 11 then 'date'
+    else 'err'
+    end ext_type
 from extension_info 
 where
-	ex_belong = 9
+	(ex_belong = 9 or ex_belong = 3)
 	and extension_code::text = '@apicode'        
             `
         }
@@ -298,6 +302,29 @@ where
 
     get alias2DB(){
         return BusinessPersonRemix.alias2DB
+    }
+
+    async resolveUndefinedColumn(col){
+        let sql = this.alias2DB.extension.default.replaceAll('@tenant', this.tenantId).replaceAll('@apicode', col)
+        let retval 
+        try{
+            let result = await this.query(sql)
+            if ( ! result ){
+                retval = undefined
+            }else{
+                if ( result.ext_type == 'select' ){
+                    retval = `(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) ${col}`
+                }else if ( result.ext_type == 'checkbox'){
+                    retval = undefined
+                }else{
+                    retval = `${result.ext_belong}.${result.ext_colname}`
+                }
+            }
+        }catch(e){
+            retval = undefined
+        }
+
+        return retval
     }
 
     async query(q) {

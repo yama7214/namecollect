@@ -47,10 +47,16 @@ WHERE
         retval.id = target.alias2DB.id.default.replace(/(.*)::.*/, '$1')
         retval.param = []
         for ( let r of result ){
-            if ( target.alias2DB[r.tname] == undefined) continue
             let p ={}
-            p.alias = r.tname
-            p.db =  target.alias2DB[r.tname].default.replaceAll(/::text/g, '')
+            if ( target.alias2DB[r.tname] == undefined) {
+                p.alias = r.tname
+                p.db = await target.resolveUndefinedColumn(r.tname)
+
+                if ( ! p.db ) continue
+            }else{   
+                p.alias = r.tname
+                p.db =  target.alias2DB[r.tname].default.replaceAll(/::text/g, '')
+            }
             retval.param.push(p)
         }
         return retval

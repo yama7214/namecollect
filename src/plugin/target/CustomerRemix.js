@@ -155,6 +155,7 @@ export let CustomerRemix = class {
 
 select 
  col_name as ext_colname,
+ 'customer' as ext_belong,
 case
  when ex_type = 0 then 'text'
  when ex_type = 1 then 'select'
@@ -208,6 +209,29 @@ where
 
     get alias2DB(){
         return CustomerRemix.alias2DB
+    }
+
+    async resolveUndefinedColumn(col){
+        let sql = this.alias2DB.extension.default.replaceAll('@tenant', this.tenantId).replaceAll('@apicode', col)
+        let retval 
+        try{
+            let result = await this.query(sql)
+            if ( ! result ){
+                retval = undefined
+            }else{
+                if ( result.ext_type == 'select' ){
+                    retval = `(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) ${col}`
+                }else if ( result.ext_type == 'checkbox'){
+                    retval = undefined
+                }else{
+                    retval = `${result.ext_belong}.${result.ext_colname}`
+                }
+            }
+        }catch(e){
+            retval = undefined
+        }
+
+        return retval
     }
 
     async query(q) {
