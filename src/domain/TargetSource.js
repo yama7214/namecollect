@@ -63,7 +63,7 @@ WHERE
     }
 
     async updateIdMap(record, tenantId){
-        let  modified = async function(tid, listname, value, tenant){
+        let  modified = async function(provider, target, tid, listname, value, tenant){
             let sql = `
 SET search_path to 'ncs';
 
@@ -74,9 +74,22 @@ SET
     targetvalue='{"record":${JSON.stringify(value)}, "timestamp":${Date.now()}}'::jsonb
 WHERE
     tenant='${tenant}'
+    and provider='${provider}'
+    and target='${target}'
     and tid='${tid}'
             `
-            await NCSDao.getInstance().execute(sql)
+            let result = await NCSDao.getInstance().execute(sql)
+            return result
+        }
+
+        let  insert = async function(provider, target, tid, listname, value, tenant){
+            let sql = `
+SET search_path TO 'ncs';
+INSERT INTO idmap (provider, target, pid, tid, targetlist, targetvalue, targetstatus, tenant, mergedvalue, "option")
+VALUES ('${provider}', '${target}', null,  '${tid}', ${listname ? `'{${listname.join(',')}}'` : null}, ${value ? `'${JSON.stringify(value)}'::jsonb` : null}, null, '${tenant}', null, null)
+            `
+            let result = await NCSDao.getInstance().execute(sql)
+            return result
         }
 
         let deleted = async function(tid, tenant){
@@ -104,14 +117,40 @@ WHERE
     tenant='${tenant}'
     and tid='${tid}'
             `
-            await NCSDao.getInstance().execute(sql)
+           await NCSDao.getInstance().execute(sql)
         }
 
         for ( let r of record){
             let action = r.action
 
             if ( action == 'MODIFIED' ){
-                await modified(r.id, r.listname, r.param, tenantId)
+                let providerq = `
+SET search_path to 'ncs';
+
+SELECT
+	array_agg(provider) as providerlist
+FROM(
+	SELECT DISTINCT
+		provider
+	FROM
+		idmap
+	WHERE
+		target = '${this.targetName}'
+	) dist
+                `
+
+                let result = await NCSDao.getInstance().query(providerq)
+                if ( !result[0] ){
+                    return
+                }
+
+                for ( let p of result[0].providerlist){
+                    let count = await modified(p, this.targetName, r.id, r.listname, r.param, tenantId)
+                    if ( count == 0 ){
+                        await insert(p, this.targetName, r.id, r.listname, r.param, tenantId)
+                    }
+                }
+
             }else if ( action == 'DELETED' ){
                 await deleted(r.id, tenantId)
             }else if ( action == 'INTEGRATED' ){

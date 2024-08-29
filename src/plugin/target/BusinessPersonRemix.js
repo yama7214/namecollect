@@ -1,6 +1,7 @@
 import pg from 'pg'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
+import {HttpsProxyAgent} from 'https-proxy-agent';
 import log4js from 'log4js'
 
 const { Pool } = pg
@@ -14,223 +15,275 @@ export let BusinessPersonRemix = class {
             default:"business_person LEFT OUTER JOIN customer ON business_person.company_code = customer.company_code",
             normalizer: null},
         id:{
-            default:"business_person.business_person_id::text as id",
-            normalizer: null
+            default:"business_person.business_person_id::text",
+            colname:"business_person_id",
+            normalizer: null,
+            apicode: 928,
+            type: "num"
         },
         name:{
             default:"business_person.person_name::text",
+            colname:"person_name",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 903,
             type: "text"
         },
         nameKana:{
             default:"business_person.person_kana::text",
+            colname:"person_kana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 918,
             type: "text"
         }, 
         companyName:{
             default:"customer.company_name::text",
+            colname:"company_name",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         }, 
         department:{
             default:"business_person.depart_name::text",
+            colname:"depart_name",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 904,
             type: "text"
         }, 
         post:{
             default:"business_person.post::text",
+            colname:"post",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 905,
             type: "text"
         }, 
         email:{
             default:"business_person.e_mail::text",
+            colname:"e_mail",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 914,
             type: "text"
         }, 
         mob_e_mail:{
-            default:"business_person.e_mail::text",
+            default:"business_person.mob_e_mail::text",
+            colname:"mob_e_mail",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 913,
             type: "text"
         },
         phoneNoB:{
             default:"business_person.tel_no::text",
+            colname:"tel_no",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 909,
             type: "text"
         }, 
         mobilePhoneNo:{
             default:"business_person.mob_no::text",
+            colname:"mob_no",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 912,
             type: "text"
         }, 
         interphoneNo:{
             default:"business_person.interphone_no::text",
+            colname:"interphone_no",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 910,
             type: "text"
         }, 
         faxNoB:{
             default:"business_person.fax_no::text",
+            colname:"fax_no",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 911,
             type: "text"
         }, 
         zipcode: {
-            default:"zipcode::text",
+            default:"business_person.zipcode::text",
+            colname:"zipcode",
             normalizer: ["[ー‐―－\\-〒\\s]", ""],
             apicode: 906,
             type: "text"
         },
         addressB: {
-            default:"concat(${addressStreetB}, ${addressBuildingB}) as addressB",
+            default:"concat(${addressStreetB}, ${addressBuildingB})",
+            colname:"address",
             normalizer: ["[ー‐―－\\-〒\\s]", ""],
             refer: "default",
             apicode: 907,
+            separator: " ",
             type: "text"
         },
         addressStreetB: {
             default:"business_person.address::text",
+            colname:"address",
             normalizer: ["[ー‐―－\\-〒\\s]", "-"],
             apicode: 907,
             type: "text"
         },
         addressBuildingB: {
             default: "business_person.street_number::text",
+            colname:"street_number",
             normalizer: ["[ー‐―－\\-\\s]", ""],
             apicode: 945,
             type: "text"
         },
         urlB:{
             default:"business_person.url::text",
+            colname:"url",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 915,
             type: "text"
         }, 
         noteB:{
             default:"business_person.note::text",
+            colname:"note",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 916,
             type: "text"
         },
         serviceFlag:{
             default:"business_person.service_flag::text",
+            colname:"service_flag",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 925,
             type: "text"
         },
         validateFlagB:{
             default:"business_person.validate_flag::text",
+            colname:"validate_flag",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 927,
             type: "text"
         },
         postTypeCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 939 and es.select_code = POST_TYPE_CODE)) postTypeCode",
+            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 939 and es.select_code = POST_TYPE_CODE))",
+            colname:"POST_TYPE_CODE",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 939,
             type: "select"
         },
         departTypeCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 940 and es.select_code = DEPART_TYPE_CODE)) postTypeCode",
+            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 940 and es.select_code = DEPART_TYPE_CODE))",
+            colname:"DEPART_TYPE_CODE",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 940,
             type: "select"
         },
         companyCode:{
-            default:"customer.company_code::text",
+            default:"business_person.company_code::text",
+            colname:"company_code",
             normalizer: null,
             apicode: 902,
             type: "num"
         },
         businessCategory:{
             default:"customer.business_category::text",
+            colname:"business_category",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         companyName:{
             default:"customer.company_name::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"company_name",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         companyKana:{
             default:"customer.company_kana::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"company_kana",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         zipcodeC:{
             default:"customer.zipcode::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"zipcode",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         addressC:{
             default:"customer.address::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"address",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         phoneNoC:{
             default:"customer.tel_no::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"tel_no",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         telNo2:{
             default:"customer.tel_no_2::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"tel_no_2",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         faxNoC:{
             default:"customer.fax_no::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"fax_no",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            apicode: 307,
+            type: "text"
         },
         urlC:{
             default:"customer.hp_url::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"hp_url",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         stockExchange:{
             default:"customer.stock_exchange::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"stock_exchange",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         presidentName:{
             default:"customer.president_name::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"president_name",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         presidentKana:{
             default:"customer.president_kana::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"president_kana",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         establishDate:{
             default:"customer.establish_date::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"establish_date",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         capital:{
             default:"customer.capital::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"capital",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         employeeNum:{
             default:"customer.employee_num::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"employee_num",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         noteC:{
             default:"customer.note::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"note",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         validateFlagC:{
             default:"customer.validate_flag::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"validate_flag",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            apicode: 335,
+            type: "num"
         },
         agencyFlag:{
-            default:"customer.establish_date::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            default:"customer.agency_flag::text",
+            colname:"agency_flag",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         industryKindCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 340 and es.select_code = INDUSTRY_KIND_CODE)) postTypeCode",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
-        },
-        customerRankCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 339 and es.select_code = CUSTOMER_RANK_CODE)) customerRankCode",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 340 and es.select_code = INDUSTRY_KIND_CODE))",
+            colname:"INDUSTRY_KIND_CODE",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         customerLevel:{
             default:"(select user_message from system_message_ja_jp where message_key = (select cl.level_name from customer_level cl where cl.customer_level = customer.customer_level))",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+            colname:"customer_level",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            sql: "SET search_path TO '${tenant}'; SELECT customer_level as val FROM customer_level left join system_message_ja_jp on customer_level.\"level_name\" = message_key where default_message = '${val}'"
+        },
+        customerRankCode:{
+            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 339 and es.select_code = CUSTOMER_RANK_CODE))",
+            colname:"CUSTOMER_RANK_CODE",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
         },
         system_reg_date:{
             default:"business_person.regist_date",
@@ -294,6 +347,7 @@ where
         }
         
         this.pool = new Pool(this.conf)
+        this.proxy =  new HttpsProxyAgent('http://172.21.252.1:12080')
     } 
 
     destructor(){
@@ -313,9 +367,21 @@ where
                 retval = undefined
             }else{
                 if ( result.ext_type == 'select' ){
-                    retval = `(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) ${col}`
+                    retval = `(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) "${col}"`
                 }else if ( result.ext_type == 'checkbox'){
-                    retval = undefined
+                    retval = `
+(message_key in (
+    select ec.check_data 
+    from ext_check ec
+    where ec.extension_code = ${col} and ec.ext_chk_order = 
+        ANY(
+                select 65- i::bigint
+                from generate_series(1, length((${result.ext_colname})::bit(64))) as i
+                where substring((${result.ext_colname})::bit(64) from i for 1) = '1'
+        )
+    )
+) "${col}"                   
+                  `
                 }else{
                     retval = `${result.ext_belong}.${result.ext_colname}`
                 }
@@ -367,25 +433,54 @@ where
 
         const client = await this.pool.connect()
         client.query('BEGIN')
-        const result = await client.query(q)
-        client.query('COMMIT')
-        const rows = result[1].rows
-        client.release()
+        let result
+        let rows
+        try{
+            result = await client.query(q)
+            client.query('COMMIT')
+            rows = result[1].rows
+        }catch(e){
+            console.log(q)
+            throw e
+        }finally{
+            client.release()
+        }
 
         return rows[0]
     }
 
-    onMatch(query, param, colmap, result){
+    async isOwnColumn(alias){
+        if ( alias == 'companyCode'){
+            return true
+        }
+
+        let sql = `
+set search_path to '${this.tenantId}';
+
+select
+    col_name, extension_code
+from
+    extension_info
+where
+    ex_belong in (3, 9)
+    and (col_name::text ilike '${BusinessPersonRemix.alias2DB[alias]?.colname}' or extension_code::text =  '${alias}')
+`
+        
+        let result = await this.query(sql)
+        return ! result ? false : true
+    }
+
+    onMatch(query, param, colmap, result, option){
         //param.id = result.id
     }
 
-    async onMerge(query, param, colmap, result){
+    async onMerge(query, param, colmap, result, option){
         let body = {
             "objectName": "person",
             "items": []
         }
         let retval = {}
-        for ( let c in colmap){
+        for ( let c of colmap){
             let p = result[c]
             let a = BusinessPersonRemix.alias2DB[c]
             if ( p && a && a.apicode){
@@ -401,15 +496,31 @@ where
         const response = await fetch(url, {
             method: 'put',
             body: JSON.stringify(body),
-            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': option.apikey}
         });
-        const data = await response.json()
+
+        let res 
+        let data
+        try{
+            res = await response.text()
+            data = JSON.parse(res)
+        }catch(e){
+            let er = new Error(`更新に失敗しました(メッセージ:${res})`)
+            er.httpstatus = data.code
+            throw er
+        }
+        if ( data.code != undefined && data.code != 200 ){
+            let er = new Error(`更新に失敗しました(メッセージ:${data?.messages[0]})`)
+            er.httpstatus = data.code
+            throw er
+        }
+
         retval.id = data.primarykey
         return retval
     }
 
 
-    async onUnmatch(query, param, colmap, idmap){
+    async onUnmatch(query, param, colmap, idmap, option){
         let body = {
             "objectName": "person",
             "items": []
@@ -423,7 +534,8 @@ where
                     let url = Config.getInstance().appserver + this.tenantId + `/rest/v1/entities/selectitems?obj_name=person&column_code=${a.apicode}`
                     const response = await fetch(url, {
                         method: 'get',
-                        headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+                        headers: {'Content-Type': 'application/json', 'X-Auth-API-Token':option.apikey},
+                        agent: this.proxy
                     });
                     const data = await response.json()
    
@@ -456,7 +568,8 @@ where
         const response = await fetch(url, {
             method: 'post',
             body: JSON.stringify(body),
-            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': option.apikey},
+            agent: this.proxy
         });
         let res 
         let data

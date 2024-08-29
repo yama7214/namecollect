@@ -25,10 +25,14 @@ export let Config = class{
         }
         this.logs = {        
             appenders: { 
-                access: { type: "file", filename: "./logs/access.log" }
+                access: { type: "dateFile", "category": "default", "pattern": "yyyyMMdd.log", filename: "./logs/access.log" },
+                error:  { type: "dateFile", "category": "errlog","pattern": "yyyyMMdd.log", filename: "./logs/error.log" },
+                system: { type: "dateFile", "category": "syslog","pattern": "yyyyMMdd.log", filename: "./logs/system.log" }
                 },
             categories: { 
-                default: { appenders: ["access"], level: "debug" } 
+                default: { appenders: ["access"], level: "debug" } ,
+                errlog:  { appenders: ["error"], level: "debug" } ,
+                syslog:  { appenders: ["system"], level: "debug" }
             }
         }
         this.developerOnly = {

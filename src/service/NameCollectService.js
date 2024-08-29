@@ -8,18 +8,19 @@ import crypto from 'crypto'
 export let NameCollectService = class {
   static instance
 
-  static getInstance(tenantId) {
+  static getInstance(tenantId, apikey) {
     let instance = NameCollectService.instance
       /*? NameCollectService.instance
       : (NameCollectService.instance = new NameCollectService())
 
       return instance
       */
-     return new NameCollectService(tenantId)
+     return new NameCollectService(tenantId, apikey)
   }
   
 
-  constructor(tenantId) {
+  constructor(tenantId, apikey) {
+    this.apikey = apikey
     this.tenantId = tenantId
     this.instanceId = crypto.randomUUID()
   }
@@ -77,7 +78,7 @@ export let NameCollectService = class {
   async getRegisteredRequired(provider, target, after, page){
     let querySource = QuerySource.getInstance(provider, this.tenantId)
 
-    let cond = `pid is NULL`
+    let cond = `pid is NULL and tid is not NULL`
     let longa = 0
     if ( after ){
       let longa = 0
@@ -94,6 +95,10 @@ export let NameCollectService = class {
 
     await querySource.loadIdMap(target, cond, page)
     let idmap = querySource.getIdMap(target).idmap
+
+    await querySource.loadColMap(target)
+    let colmap = querySource.getColMap(target)
+
     let retval = {}
     retval.target = target
     retval.record = []
@@ -101,7 +106,25 @@ export let NameCollectService = class {
     for ( let pid in idmap ){
       for ( let tid in idmap[pid] ){
         let ids = idmap[pid][tid]
-        retval.record.push({targetId: ids.tid, targetList: ids.targetlist, param: ids.targetvalue.record})
+        let record = {}
+
+        for ( let i in ids.targetvalue.record ){
+          let pname = colmap.tname2pname(i)
+          console.log(`${i} --> ${pname}`)
+          if ( ids.option && ids.option[pname]){
+            let start = 0
+            for ( let p in ids.option[pname]){
+              let end = start + ids.option[pname][p]
+              record[p] = ids.targetvalue.record[i].substring(start, end)
+              start = end
+            }
+          }else{
+            record[pname] = ids.targetvalue.record[i]
+          }
+        }
+        
+
+        retval.record.push({targetId: ids.tid, targetList: ids.targetlist, param: record})
       }
     }
 
@@ -165,8 +188,8 @@ export let NameCollectService = class {
     //1. pid in (keys of querymap)
     //2. targetstatus = 'MODIFIED' and pid IS NOT NULL
     let qkeys = JSON.stringify(Object.keys(querymap)).replaceAll('"', "'")
-
-    let cond1 = `pid in (${qkeys.slice(1,qkeys.length-1)})`
+    let pidlist = qkeys.slice(1,qkeys.length-1)
+    let cond1 = pidlist.length > 0 ? `pid in (${qkeys.slice(1,qkeys.length-1)})` : 'false'
     let cond2 = `(targetstatus = 'MODIFIED' and pid IS NOT NULL)`
     let cond3 = `target = '${target}'`
 
@@ -182,7 +205,8 @@ export let NameCollectService = class {
     }
 
     await querySource.loadColMap(target, `sync = true`)
-    let colmap = querySource.getColMap(target).colmap
+    let colmapall = querySource.getColMap(target)
+    let colmap = colmapall.colmap
 
     let mergedinfolist = []
 
@@ -203,27 +227,56 @@ export let NameCollectService = class {
         let mergedinfo = {pid: m.pid, tid: m.tid, timestamp: timestamp}
         if ( (pmod!=undefined) ^ tmod ){
           mergedinfo = Object.assign(mergedinfo, {dir: tmod ? 't':'p', record: tmod ? m.targetvalue.record : pmod.param })
+          idmap.mergedvalue = m.targetvalue
         }else{
           mergedinfo = Object.assign(mergedinfo, {dir: 'b', record: {}})
           for ( let col of colmap ){
-            let mcolval = m.mergedvalue.record[col.tname]
+            let mcolval = m.mergedvalue?.record[col.tname]
             let pcolmod = mcolval == pmod.param[col.pname]
-            let tcolmod = mcolval == m.targetvalue[col.tname]
+            let tcolmod = mcolval == m.targetvalue.record[col.tname]
 
             if ( pcolmod == true && tcolmod == true ){
               if (pmod.timestamp > m.targetvalue.timestamp){
                 mergedinfo.record[col.tname] = pmod.param[col.pname]
               }else{
-                mergedinfo.record[col.tname] = m.targetvalue[col.tname]
+                mergedinfo.record[col.tname] = m.targetvalue.record[col.tname]
               }
 
             }else if ( pcolmod == true && tcolmod == false ){
               mergedinfo.record[col.tname] = pmod.param[col.pname]
             }else if ( pcolmod == false && tcolmod == true ){
-              mergedinfo.record[col.tname] = m.targetvalue[col.tname]
+              mergedinfo.record[col.tname] = m.targetvalue.record[col.tname]
             }
           }
         }
+ 
+        let idmapval = {record:mergedinfo.record, timestamp:mergedinfo.timestamp}
+        idmap[pid][tid].mergedvalue = idmapval
+        idmap[pid][tid].targetvalue = idmapval
+        idmap[pid][tid].targetstatus = null
+
+        //convert tname to pname
+        let record = {}
+        let ids = idmap[pid][tid]
+
+        for ( let c in mergedinfo.record){
+          console.log(c)
+          let pname = colmapall.tname2pname(c)
+          console.log(`${c} --> ${pname}`)
+          if ( ids.option && ids.option[pname]){
+            let start = 0
+            for ( let p in ids.option[pname]){
+              let end = start + ids.option[pname][p]
+              record[p] = mergedinfo.record[c].substring(start, end)
+              start = end
+            }
+          }else{
+            record[pname] = mergedinfo.record[c]
+          }
+        }
+
+        mergedinfo.record = record
+
         mergedinfolist.push(mergedinfo)
       }
     } 
@@ -237,20 +290,32 @@ export let NameCollectService = class {
       if (m.dir == 'p' || m.dir == 'b'){
         let t = CollectTargetRepository.getInstance(target, this.tenantId)
         m.record.id = m.tid
-        //t.onMerge(req.tenant, null, null, Object.keys(m.record), m.record)
+        await t.onMerge(null, null, Object.keys(m.record), m.record, {apikey:this.apikey})
       }
       result.record.push({queryId: m.pid, targetId: m.tid, by: m.dir, targetLists: pidmap[m.pid].targetList, param: m.record})
     }
     
+    await querySource.save()
     return result
   }
 
   async match(req) {
     let tlist = req.target
-
     let retval = {}
-
     let querySource = QuerySource.getInstance(req.provider, this.tenantId)
+
+    let createIdOpt = function(colmap, param){
+      let retval = {}
+      for ( let c of colmap.colmap){
+        if ( c.popt.concat && param[`+${c.pname}`]){
+          retval[c.tname] = {}
+          for ( let con of c.popt.concat){
+            retval[c.tname][con] = param[con].length
+          }
+        }
+      }
+      return retval
+    }
 
     for ( let t of tlist ){
 
@@ -274,7 +339,7 @@ export let NameCollectService = class {
           let uselist = option.use
           let order = option.order
           if( !uselist ){
-           //TODO: Thorow Error
+            continue
           }
 
           let match
@@ -284,16 +349,18 @@ export let NameCollectService = class {
 
             match = await rule.match(this.tenantId, normparam, map, target, ruleOption)
             if ( match ){
-              target.onMatch(q, normparam, map, match)
+              target.onMatch(q, normparam, map, match, {apikey: this.apikey})
               result.match.push({queryId:q.id, targetId:match.id, param:match})
-              idmap.add(q.id, match.id, null, null, match, null)
+              let idopt = createIdOpt(columnmap, param)
+              idmap.add(q.id, match.id, null, null, match, null, idopt)
               break
             }
           }
           if (! match) {
-            match = await target.onUnmatch(q, normparam, map, idmap)
+            match = await target.onUnmatch(q, normparam, map, idmap, {apikey: this.apikey})
             result.match.push({queryId:q.id, targetId:match.id, param:match})
-            idmap.add(q.id, match.id, null, null, match, null)
+            let idopt = createIdOpt(columnmap, param)
+            idmap.add(q.id, match.id, null, null, match, null, idopt)
           }
         }
       }
@@ -306,6 +373,6 @@ export let NameCollectService = class {
   }
 
   async setModifiedTarget(target, record){
-    await TargetSource.getInstance(target).updateIdMap(record, this.tenantId)
+    await TargetSource.getInstance(target).updateIdMap({record:record, timestamp:Date.now()}, this.tenantId)
   }
 }

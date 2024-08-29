@@ -41,17 +41,21 @@ WHERE
     }
 
     async save(){
+        if ( Object.keys(this.idmap).length== 0 ){
+            return
+        }
+
         //UPSERT idmap
         let upsert = `
 SET search_path TO 'ncs';
-INSERT INTO idmap (provider, target, pid, tid, targetvalue, tenant, mergedvalue, "option")
+INSERT INTO idmap (provider, target, pid, tid, targetlist, targetvalue, targetstatus, tenant, mergedvalue, "option")
 VALUES ${
     function fn(){
         let retval = ''
         for ( let pid in this.idmap ){
             for ( let tid in this.idmap[pid]){
                 let e = this.idmap[pid][tid]
-                retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : 'null'},  ${e.tid ? `'${e.tid}'` : 'null'}, ${e.targetvalue ? `'${JSON.stringify(e.targetvalue)}'::jsonb` : 'null'}, '${this.tenantId}', ${e.mergedvalue ? `'${JSON.stringify(e.mergedvalue)}'::jsonb` : 'null'}, ${e.option ? `'${JSON.stringify(e.option)}'::jsonb` : 'null'}),` + "\r\n"
+                retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : null},  ${e.tid ? `'${e.tid}'` : null}, ${e.targetlist ? `'{${e.targetlist.join(',')}}'` : null}, ${e.targetvalue ? `'${JSON.stringify(e.targetvalue)}'::jsonb` : null}, ${e.targetstatus ? `'${e.targetstatus}'` : null},'${this.tenantId}', ${e.mergedvalue ? `'${JSON.stringify(e.mergedvalue)}'::jsonb` : null}, ${e.option ? `'${JSON.stringify(e.option)}'::jsonb` : null}),` + "\r\n"
             }
         }
         return retval = retval.slice(0, -3)
@@ -60,9 +64,11 @@ VALUES ${
 ON CONFLICT(provider, target, pid, tenant) DO
 UPDATE SET 
     tid = excluded.tid,
+    targetlist = coalesce(excluded.targetlist, idmap.targetlist),
+    targetstatus = excluded.targetstatus,
     targetvalue = coalesce(excluded.targetvalue, idmap.targetvalue),
     mergedvalue = coalesce(excluded.mergedvalue, idmap.mergedvalue),
-    "option" = coalesce(excluded.mergedvalue, idmap.mergedvalue)
+    "option" = coalesce(excluded."option", idmap."option")
     ;
         `
 

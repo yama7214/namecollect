@@ -15,7 +15,7 @@ export let SQLBuilder = class{
     }
 
     set select(cols){
-        Array.isArray(cols) ? this._select = this._select.concat(cols.map(c => '${' + c + '_default}')) : this.select.add('${' + cols + '_default}')
+        Array.isArray(cols) ? this._select = this._select.concat(cols.map(c => '${' + c + '_default} as "' + c + '"')) : this.select.add('${' + cols + '_default} as "' + c + '"')
     }
 
     get select(){

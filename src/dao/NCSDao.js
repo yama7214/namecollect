@@ -21,15 +21,18 @@ export let NCSDao = class{
     async execute(q, transaction=true){
         
         let client = await this.pool.connect()
+        let result
         try{
             if ( transaction) client.query('BEGIN')
-            await client.query(q)
+            result = await client.query(q)
             if ( transaction) client.query('COMMIT')
             client.release()
         }catch(e){
             client.release()
             throw new Error(`SQL exec failed: ${q}`)
         }
+
+        return result[1].rowCount
     }
 
     async query(q, transaction=true){

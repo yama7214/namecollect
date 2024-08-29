@@ -3,6 +3,8 @@
     "type": "module",
     "dependencies": {
         "express": "^4.19.2",
+        "http-proxy-agent": "^7.0.2",
+        "https-proxy-agent": "^7.0.5",
         "json5": "^2.2.3",
         "log4js": "^6.9.1",
         "node-fetch": "^3.3.2",
