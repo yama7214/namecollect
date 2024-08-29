@@ -54,7 +54,10 @@ VALUES ${
         let retval = ''
         for ( let pid in this.idmap ){
             for ( let tid in this.idmap[pid]){
+                
                 let e = this.idmap[pid][tid]
+                if ( ! e.pid && ! e.tid ) continue
+                
                 retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : null},  ${e.tid ? `'${e.tid}'` : null}, ${e.targetlist ? `'{${e.targetlist.join(',')}}'` : null}, ${e.targetvalue ? `'${JSON.stringify(e.targetvalue)}'::jsonb` : null}, ${e.targetstatus ? `'${e.targetstatus}'` : null},'${this.tenantId}', ${e.mergedvalue ? `'${JSON.stringify(e.mergedvalue)}'::jsonb` : null}, ${e.option ? `'${JSON.stringify(e.option)}'::jsonb` : null}),` + "\r\n"
             }
         }

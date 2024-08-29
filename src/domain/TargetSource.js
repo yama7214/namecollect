@@ -120,7 +120,7 @@ WHERE
            await NCSDao.getInstance().execute(sql)
         }
 
-        for ( let r of record){
+        for ( let r of record.record){
             let action = r.action
 
             if ( action == 'MODIFIED' ){

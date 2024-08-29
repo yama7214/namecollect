@@ -370,17 +370,29 @@ where
                     retval = `(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) "${col}"`
                 }else if ( result.ext_type == 'checkbox'){
                     retval = `
-(message_key in (
-    select ec.check_data 
-    from ext_check ec
-    where ec.extension_code = ${col} and ec.ext_chk_order = 
-        ANY(
-                select 65- i::bigint
-                from generate_series(1, length((${result.ext_colname})::bit(64))) as i
-                where substring((${result.ext_colname})::bit(64) from i for 1) = '1'
-        )
-    )
-) "${col}"                   
+(SELECT
+	string_agg(user_message, ',') as "${col}"
+FROM
+	system_message_ja_jp 
+WHERE
+	message_key in (
+		select
+			check_data
+		from
+			ext_check
+		where
+			extension_code = ${col} and
+			ext_chk_order =  ANY(
+		
+				select
+					(65-i)::bigint
+				from
+					(SELECT ${result.ext_colname} FROM customer) as c , generate_series(1,64) as i
+				where
+					substring((c.${result.ext_colname})::bit(64)::text from i for 1) = '1'::text
+			)
+	)
+) "${col}"
                   `
                 }else{
                     retval = `${result.ext_belong}.${result.ext_colname}`
