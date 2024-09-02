@@ -1,5 +1,3 @@
--- Table: ncs.columnmap
-
 -- DROP TABLE IF EXISTS ncs.columnmap;
 
 CREATE TABLE IF NOT EXISTS ncs.columnmap
